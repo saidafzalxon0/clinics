@@ -10,6 +10,7 @@ import lombok.Setter;
 @Table(name = "work_day")
 public class Work_day {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @JoinColumn(name = "doctor_id",nullable = false)
     @OneToOne

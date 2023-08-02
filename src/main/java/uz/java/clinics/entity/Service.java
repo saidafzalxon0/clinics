@@ -10,6 +10,7 @@ import lombok.Setter;
 @Table(name = "Service")
 public class Service {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @JoinColumn(name = "clinic_id",nullable = false)
     @ManyToOne
