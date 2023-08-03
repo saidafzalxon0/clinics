@@ -1,7 +1,9 @@
 package uz.java.clinics.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import uz.java.clinics.config.JwtService;
 import uz.java.clinics.dto.AdminDto;
 import uz.java.clinics.dto.ResponseDto;
 import uz.java.clinics.entity.Admin;
@@ -20,9 +22,17 @@ public class AdminServiceImpl implements AdminService {
     private AdminRepository repository;
     @Autowired
     private AdminMapper mapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
     @Override
     public ResponseDto<String> signIn(AdminDto adminDto) {
-        return null;
+        Optional<Admin> admin = repository.findFirstByLoginAndPassword(adminDto.getLogin(), adminDto.getPassword());
+        var jwtToken = jwtService.generateToken(admin.get());
+        return ResponseDto.<String>builder().data(jwtToken).status("success").build();
     }
 
     @Override

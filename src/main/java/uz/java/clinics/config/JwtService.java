@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +25,9 @@ public class JwtService {
     @Value("${spring.security.secret.key}")
     private String SECRET_KEY;
 
+    @Autowired
+    private CustomUserDetailsService customUserDetailsService;
+
 
     public String generateToken(UserDetails userDetails){
         return generateToken(new HashMap<>(),userDetails);
@@ -40,9 +44,9 @@ public class JwtService {
 
     public String generateToken(Map<String,Object> extraClaims, UserDetails userDetails){
 
-        Set<String> authorities = userDetails.getAuthorities().stream()
+        String authorities = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
+                .collect(Collectors.joining());
 
         extraClaims.put("authorities", authorities);
 
@@ -57,15 +61,21 @@ public class JwtService {
     }
 
 
-    public boolean isTokenValid(String token, UserDetails userDetails){
+    public boolean isTokenValid(String token){
         final String username = extractUsername(token);
-        Set<String> authorities = extractClaim(token, claims -> (Set<String>) claims.get("authorities"));
-        Set<String> userDetailsAuthorities = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
-
-        return username.equals(userDetails.getUsername()) && authorities.equals(userDetailsAuthorities) && !isTokenExpired(token);
+        String authorities = extractClaim(token, claims -> (String) claims.get("authorities"));
+        UserDetails userDetails = customUserDetailsService.loadUserByUsernameAndRole(username, authorities);
+        return username.equals(userDetails.getUsername()) && (authorities.equalsIgnoreCase("admin") || authorities.equalsIgnoreCase("user") || authorities.equalsIgnoreCase("doctor")) && !isTokenExpired(token);
     }
+
+    public UserDetails authorities(String token){
+        final String username = extractUsername(token);
+        String authorities = extractClaim(token, claims -> (String) claims.get("authorities"));
+        UserDetails userDetails = customUserDetailsService.loadUserByUsernameAndRole(username, authorities);
+        return userDetails;
+    }
+
+
 
 
     private boolean isTokenExpired(String token) {
